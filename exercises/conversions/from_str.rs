@@ -4,6 +4,8 @@
 // You can read more about it at https://doc.rust-lang.org/std/str/trait.FromStr.html
 use std::error;
 use std::str::FromStr;
+use std::error::Error;
+use std::fmt;
 
 #[derive(Debug)]
 struct Person {
@@ -11,7 +13,29 @@ struct Person {
     age: usize,
 }
 
-// I AM NOT DONE
+#[derive(Debug)]
+struct MyError {
+    details: String
+}
+
+impl MyError {
+    fn new(msg: &str) -> MyError {
+        MyError{details: msg.to_string()}
+    }
+}
+
+impl fmt::Display for MyError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"{}",self.details)
+    }
+}
+
+impl Error for MyError {
+    fn description(&self) -> &str {
+        &self.details
+    }
+}
+
 
 // Steps:
 // 1. If the length of the provided string is 0, an error should be returned
@@ -26,6 +50,17 @@ struct Person {
 impl FromStr for Person {
     type Err = Box<dyn error::Error>;
     fn from_str(s: &str) -> Result<Person, Self::Err> {
+	if s.len() == 0 { return Err(Box::new(MyError::new("borked"))) }
+	let split_str = s.split(",").collect::<Vec<&str>>();
+        let name =  split_str[0].to_string();
+	if (name == "") { return  Err(Box::new(MyError::new("borked"))); }
+	if (split_str.len() != 2)  { return  Err(Box::new(MyError::new("borked"))); }
+	let age : usize = match &split_str[1].trim().parse() {
+	    Ok(num) => *num,
+	    Err(x) =>  { return Err(Box::new(MyError::new("borked"))); }
+	};
+	let person = Person { name : split_str[0].to_string(), age: age };
+	Ok(person)
     }
 }
 
